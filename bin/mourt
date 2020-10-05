@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+
+const Cli = require('../lib/cli');
+const process = require('process');
+const argv = require('minimist')(process.argv.slice(2), Cli.opts);
+
+//console.log(argv);
+
+const cli = new Cli();
+cli.run(argv)
+.then(() => {},
+    (err) => {
+        console.error(err);
+        process.exitCode = 1;
+    });
