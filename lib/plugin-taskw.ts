@@ -5,9 +5,9 @@ function fetchData() {
         const taskw = spawn('task', ['+ACTIVE', 'export']);
         let msg = '';
         let err = '';
-        taskw.stdout.on('data', (data) => (msg = data.toString('utf-8')));
-        taskw.stderr.on('data', (data) => console.error(data.toString('utf-8')));
-        taskw.on('close', (code) => {
+        taskw.stdout.on('data', (data : any) => (msg = data.toString('utf-8')));
+        taskw.stderr.on('data', (data : any) => console.error(data.toString('utf-8')));
+        taskw.on('close', (code : number) => {
             if((code !== 0)) {
                 return reject(Error('Taskw: ' + (err || 'non zero exit')));
             }
