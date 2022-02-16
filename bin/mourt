@@ -5,11 +5,12 @@ const process = require('process');
 const argv = require('minimist')(process.argv.slice(2), Cli.opts);
 
 //console.log(argv);
+// This miniimal entrypoint is kept as non-typescript…for now?
 
 const cli = new Cli();
 cli.run(argv)
-.then(() => {},
-    (err) => {
-        console.error(err);
-        process.exitCode = 1;
-    });
+    .then(() => { },
+        (err) => {
+            console.error(err);
+            process.exitCode = 1;
+        });

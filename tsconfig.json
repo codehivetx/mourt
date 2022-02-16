@@ -1,0 +1,13 @@
+{
+    "extends": "@tsconfig/node16/tsconfig.json",
+    "compilerOptions": {
+        "module": "commonjs"
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "include": [
+        "lib/**/*",
+        "main.ts"
+    ]
+}
