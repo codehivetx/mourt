@@ -6,8 +6,21 @@ const { fetchTask } = require('./plugin-taskw');
 const chalk = require('chalk');
 
 interface MourtBlob {
+    /**
+     * Full date
+     */
     date: string,
+    /**
+     * Short date such as 2022-03-04
+     */
+    shortDate: string,
+    /**
+     * TW blob
+     */
     taskwarrior: any,
+    /**
+     * String message
+     */
     message: string,
 };
 class Cli {
@@ -76,6 +89,7 @@ class Cli {
      * @returns array of { date, taskwarrior, message}
      */
     async getList(argv: any): Promise<MourtBlob[]> {
+        // TODO: filter by date for speed
         const proj = argv.project || null;
         const allFiles = (await Cli.getAllJsonFiles(this.baseDir))
             .sort(); // sorted will give us ascending time
@@ -132,6 +146,18 @@ class Cli {
         }
     }
 
+    /**
+     *
+     * @param ddd
+     * @returns string such as '2022-01-02'
+     */
+    static asShortDate(ddd: string | Date): string {
+        if (typeof ddd === 'string') {
+            ddd = new Date(ddd);
+        }
+        return ddd.toLocaleDateString(["en-US"]);
+    }
+
     static async readMourtFile(f: string): Promise<MourtBlob> {
         let d;
         try {
@@ -139,6 +165,10 @@ class Cli {
         } catch (e) {
             console.error('Could not read ' + f);
             throw e;
+        }
+        // If the date is present, preparse it here.
+        if (d.date) {
+            d.shortDate = Cli.asShortDate(d.date);
         }
         return d; // TODO: preprocessing here?
     }
