@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "postinstall": "tsc"
+    "postinstall": "tsc",
+    "prepublishOnly": "tsc"
   },
   "keywords": [],
   "author": "Steven R. Loomis <srl295@gmail.com>",
