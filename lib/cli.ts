@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2022 Code Hive Tx, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 const config : any = require('./config')();
 const fs = require('fs').promises;
 const { readFile } = require('fs');

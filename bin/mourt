@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 
+/**
+ * Copyright (c) 2022 Code Hive Tx, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 const Cli = require('../lib/cli');
 const process = require('process');
 const argv = require('minimist')(process.argv.slice(2), Cli.opts);
 
-//console.log(argv);
-// This miniimal entrypoint is kept as non-typescript…for now?
+// This minimal entrypoint is kept as non-typescript…for now?
 
 const cli = new Cli();
 cli.run(argv)

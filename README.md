@@ -1,6 +1,8 @@
 # What is this
 
-diary/log
+This is a very simple JSON based diary/log, with extensible metadata.
+
+I use it witih the TaskWarrior plugin to collect notes alongside tasks.
 
 usage:
 
@@ -36,3 +38,4 @@ mourt -D 'plugin.taskw.args=-b task +ACTIVE export'
 # LICENSE
 
 Apache-2.0 see ./LICENSE
+Copyright (c) 2022 Code Hive Tx, LLC
