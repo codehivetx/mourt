@@ -1,8 +1,18 @@
 const {spawn} = require('child_process');
 
-function fetchData() {
+function fetchData(config: any) {
+
+    function getTaskCommand(): string {
+        return config.get('plugin.taskw.command') || 'task';
+    }
+
+
+    function getTaskArgs(): string[] {
+        return (config.get('plugin.taskw.args') || '+ACTIVE export').split(' ');
+    }
+
     return new Promise((resolve, reject) => {
-        const taskw = spawn('task', ['+ACTIVE', 'export']);
+        const taskw = spawn(getTaskCommand(), getTaskArgs());
         let msg = '';
         let err = '';
         taskw.stdout.on('data', (data : any) => (msg = data.toString('utf-8')));
@@ -16,8 +26,8 @@ function fetchData() {
     });
 }
 
-module.exports.fetchTask = async function fetchTask() {
-    const data = await fetchData();
+module.exports.fetchTask = async function fetchTask(config: any) {
+    const data = await fetchData(config);
     // console.dir(data);
     return data;
 };

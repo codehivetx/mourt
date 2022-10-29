@@ -1,4 +1,4 @@
-const config = require('./config')();
+const config : any = require('./config')();
 const fs = require('fs').promises;
 const { readFile } = require('fs');
 const path = require('path');
@@ -67,7 +67,7 @@ class Cli {
         const dir = await this.getDir(date);
         const fn = date.toISOString() + '.json';
         const filep = path.join(dir, fn);
-        const taskwarrior = await fetchTask();
+        const taskwarrior = await fetchTask(config);
         const o = {
             date,
             localDate: date.toString(),
