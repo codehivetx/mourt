@@ -26,14 +26,35 @@ node bin/mourt -D dir=/path/to/data -m 'message'
 node bin/mourt -l
 node bin/mourt -D 'plugin.taskw.command=dock-warrior'
 node bin/mourt -P dir                    # get current dir
+node bin/mourt -P path                   # which config file is in effect
 ```
+
+### Choosing a config file
+
+By default the config lives at `configstore/@codehivetx/mourt.json` under the XDG
+config dir (`~/$XDG_CONFIG_HOME`, else `~/.config`). To point somewhere else —
+**strongly preferred for experiments and tests, so the real config is never
+written**:
+
+```
+mourt -c /tmp/scratch.json -D dir=/tmp/scratch-data -m 'message'
+MOURT_CONFIG=/tmp/scratch.json mourt -l
+mourt -c /tmp/scratch.json -P path        # confirm where it resolved
+```
+
+Precedence: `-c/--config` > `$MOURT_CONFIG` > configstore default. Note that
+`-c` on its own (with no other command) prints the resolved path.
 
 ## Gotchas
 
 - **No tests exist yet.** `npm test` exits 1 by design (`echo "Error: no test specified" && exit 1`); nothing is broken.
 - `bin/mourt` requires `../dist/lib/cli` — the *compiled* output, not `lib/cli.ts`. Build before running.
 - `lib/config.ts` requires `../../package.json` because the compiled file lives at `dist/lib/`. Moving between source and compiled dirs means different relative depths.
-- `lib/config.ts` returns a lazy `new Configstore(name)` — calling code must invoke the function: `require('./config')()`
+- `lib/config.ts` returns `createConfig(argv)` — calling code must invoke it: `require('./config').createConfig(argv)`. The store is opened **per `Cli` instance** in the constructor, not at module load, so that `-c`/`$MOURT_CONFIG` can redirect it and tests can inject a throwaway store.
+- `lib/config.ts` must not pass a `defaults` argument to `Configstore`: the constructor *writes* the file whenever `defaults` is truthy (configstore/index.js:24-29), which would rewrite the config on every read.
+- `lib/config.ts` validates the target is a JSON object before handing it to configstore, because configstore silently **empties** a file it can't parse (configstore/index.js:47-49).
+- `bin/mourt` must parse argv *before* `new Cli(argv)`, and construction is wrapped in try/catch — a bad `--config` throws during construction, outside the `run()` promise chain.
+- `lib/*.ts` are CommonJS scripts with no `import`/`export`, so TypeScript treats them as sharing **one global scope**. Top-level `const` names must be unique across files (hence `nodefs`/`nodepath` in `config.ts`). Do not "fix" this with `export {}` — that emits an `__esModule` marker into the CJS and can confuse bundler interop.
 - `require('../package.json')` resolves fine because `tsconfig` uses CommonJS. Don't "fix" it to an ESM import.
 - `config.get('dir')` returns `undefined` until `-D dir=...` is set. `Cli.requireBaseDir()` throws a helpful error rather than letting `fs.opendir(undefined)` fail opaquely.
 - Data is stored under the config dir set by `-D dir=...`, with date-subdirectories (`YYYY/MM/DD/`)

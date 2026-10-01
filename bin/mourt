@@ -11,10 +11,21 @@ const Cli = require('../dist/lib/cli');
 const process = require('process');
 const argv = require('minimist')(process.argv.slice(2), Cli.opts);
 
-const cli = new Cli();
-cli.run(argv)
-    .then(() => { },
-        (err) => {
-            console.error(err);
-            process.exitCode = 1;
-        });
+// argv must be parsed before constructing Cli, since -c/--config and
+// $MOURT_CONFIG decide which config file the instance opens. Construction
+// can throw (e.g. an unreadable --config), so route it through the same
+// error handling as run() rather than dumping a raw stack trace.
+function fail(err) {
+    console.error(err.message || err);
+    process.exitCode = 1;
+}
+
+let cli;
+try {
+    cli = new Cli(argv);
+} catch (err) {
+    fail(err);
+    return;
+}
+
+cli.run(argv).then(() => { }, fail);
