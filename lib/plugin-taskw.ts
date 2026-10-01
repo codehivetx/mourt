@@ -5,7 +5,11 @@
 
 const {spawn} = require('child_process');
 
-function fetchData(config: any) {
+/**
+ * Run taskwarrior and return its exported tasks.
+ * Rejects if taskwarrior exits non-zero.
+ */
+module.exports.fetchTask = function fetchTask(config: any): Promise<any[]> {
 
     function getTaskCommand(): string {
         return config.get('plugin.taskw.command') || 'task';
@@ -21,23 +25,23 @@ function fetchData(config: any) {
         let msg = '';
         let err = '';
         taskw.stdout.on('data', (data : any) => (msg = msg + data.toString('utf-8')));
-        taskw.stderr.on('data', (data : any) => console.error(data.toString('utf-8')));
+        taskw.stderr.on('data', (data : any) => {
+            const str = data.toString('utf-8');
+            err += str;
+            console.error(str);
+        });
         taskw.on('close', (code : number) => {
             if((code !== 0)) {
                 return reject(Error('Taskw: ' + (err || 'non zero exit')));
             }
-            const j = JSON.parse(msg);
+            const j: any[] = JSON.parse(msg);
             // this one is too big
-            delete (j || [])[0].githubbody;
-            delete (j || [])[0].annotations;
+            if (j && Array.isArray(j) && j.length > 0 && j[0]) {
+                delete j[0].githubbody;
+                delete j[0].annotations;
+            }
 
             return resolve(j);
         });
     });
-}
-
-module.exports.fetchTask = async function fetchTask(config: any) {
-    const data = await fetchData(config);
-    // console.dir(data);
-    return data;
 };

@@ -2,8 +2,27 @@
   "name": "@codehivetx/mourt",
   "version": "1.2.2-0",
   "description": "Extensible Diary/Journal Platform",
-  "main": "main.js",
-  "bin": "bin/mourt",
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "bin": {
+    "mourt": "bin/mourt"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts",
+      "default": "./dist/main.js"
+    },
+    "./lib/cli": {
+      "types": "./dist/lib/cli.d.ts",
+      "default": "./dist/lib/cli.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "dist/**/*.js",
+    "dist/**/*.d.ts"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
