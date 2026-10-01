@@ -42,6 +42,8 @@ node bin/mourt -P dir                    # get current dir
 - When listing (`-l`) with `-p project`, entries **without** a `taskwarrior` field are excluded (they can't be matched). Without `-p`, all entries are listed.
 - Build output (`dist/`) is git-ignored and shipped via `package.json` `files`, which ships `dist/**/*.js` + `dist/**/*.d.ts` and deliberately excludes `.ts` sources and `.map` files. There is no `.npmignore` — the `files` field supersedes it.
 - `main.ts` uses `module.exports`/`require` deliberately (CommonJS), matching the rest of the codebase and the `exports` map.
+- `@types/node` is v26 but the tsconfig base is `@tsconfig/node16`. The type surface now describes a much newer Node than the compile target, so "node16 support" is **advisory, not enforced** — don't assume a newer Node API is safe for consumers. The base is kept only so the emitted JS shape is unchanged.
+- Known pre-existing advisory: `semver@6.3.0` (ReDoS, GHSA-c2qf-rxjj-qqgw) via `configstore → make-dir`. Not reachable from user input here; left alone deliberately rather than papering over with `npm audit fix`.
 
 ## Todo / Planned Fixes
 
