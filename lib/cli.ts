@@ -5,7 +5,6 @@
 
 const config : any = require('./config')();
 const fs = require('fs').promises;
-const { readFile } = require('fs');
 const path = require('path');
 const { fetchTask } = require('./plugin-taskw');
 const chalk = require('chalk');
@@ -18,15 +17,19 @@ interface MourtBlob {
     /**
      * Short date such as 2022-03-04
      */
-    shortDate: string,
+    shortDate?: string,
     /**
-     * TW blob
+     * TW blob. Absent when the entry was written with no active task.
      */
-    taskwarrior: any,
+    taskwarrior?: any,
     /**
      * String message
      */
     message: string,
+    /**
+     * Date.toString() of the local time, for human-readable reads.
+     */
+    localDate?: string,
 };
 class Cli {
 
@@ -74,7 +77,8 @@ class Cli {
         const filep = path.join(dir, fn);
         const taskwarrior = await fetchTask(config);
         const o = {
-            date,
+            // Stored as an ISO string; MourtBlob.date is read back as a string.
+            date: date.toISOString(),
             localDate: date.toString(),
             taskwarrior,
             message
@@ -96,20 +100,18 @@ class Cli {
     async getList(argv: any): Promise<MourtBlob[]> {
         // TODO: filter by date for speed
         const proj = argv.project || null;
-        const allFiles = (await Cli.getAllJsonFiles(this.baseDir))
+        const baseDir = this.requireBaseDir();
+        const allFiles = (await Cli.getAllJsonFiles(baseDir))
             .sort(); // sorted will give us ascending time
-        // .filter … 
         const out: MourtBlob[] = [];
         for (const f of allFiles) {
             const d: MourtBlob = await Cli.readMourtFile(f);
             const { taskwarrior } = d;
-            if (proj && taskwarrior) {
-                if (taskwarrior[0].project !== proj) {
-                    // skip non matched
-                    continue;
-                }
-            } else {
-                if (proj) continue; // not shown.
+            // With a project filter, entries that carry no taskwarrior data
+            // can't be matched, so they are excluded.
+            if (proj) {
+                if (!taskwarrior) continue;
+                if (taskwarrior[0].project !== proj) continue;
             }
             out.push(d);
         }
@@ -201,13 +203,24 @@ class Cli {
 
     async getDir(date: Date): Promise<string> {
         const datePath = Cli.dateToDir(date);
-        const p = path.join(this.baseDir, datePath);
+        const p = path.join(this.requireBaseDir(), datePath);
         await fs.mkdir(p, { recursive: true });
         return p;
     }
 
-    get baseDir() {
+    get baseDir(): string | undefined {
         return config.get('dir');
+    }
+
+    /**
+     * baseDir, or an error if `dir` was never configured.
+     */
+    requireBaseDir(): string {
+        const d = this.baseDir;
+        if (!d) {
+            throw Error('no data dir configured; set one with: mourt -D dir=/path/to/data');
+        }
+        return d;
     }
 
     static dateToDir(date: Date): string {
