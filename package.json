@@ -2,6 +2,9 @@
   "name": "@codehivetx/mourt",
   "version": "1.2.2-0",
   "description": "Extensible Diary/Journal Platform",
+  "engines": {
+    "node": ">=22.3"
+  },
   "main": "dist/main.js",
   "types": "dist/main.d.ts",
   "bin": {
@@ -24,7 +27,7 @@
     "dist/**/*.d.ts"
   ],
   "scripts": {
-    "test": "npm run build && tsc -p tsconfig.test.json && node --test \"dist-test/test/*.test.js\"",
+    "test": "npm run build && tsc -p tsconfig.test.json && node --test --test-reporter=spec \"dist-test/test/*.test.js\"",
     "build": "tsc",
     "prepublishOnly": "tsc"
   },
