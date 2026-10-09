@@ -24,7 +24,7 @@
     "dist/**/*.d.ts"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run build && tsc -p tsconfig.test.json && node --test \"dist-test/test/*.test.js\"",
     "build": "tsc",
     "prepublishOnly": "tsc"
   },

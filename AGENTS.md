@@ -45,6 +45,41 @@ mourt -c /tmp/scratch.json -P path        # confirm where it resolved
 Precedence: `-c/--config` > `$MOURT_CONFIG` > configstore default. Note that
 `-c` on its own (with no other command) prints the resolved path.
 
+`-D` (set) and `-P` (get) read and write **whichever config is in effect**, so
+`-D` without `-c` rewrites the real config. Always pass `-c` (or set
+`$MOURT_CONFIG`) when experimenting; confirm with `-P path`.
+
+### Using it from code / tests
+
+`new Cli(argv)` opens the store itself, so passing `{ config: <path> }` is all
+it takes to redirect an instance — no CLI, no env, no writes to the real config:
+
+```ts
+const Cli = require('../lib/cli');
+const cli = new Cli({ config: '/tmp/scratch.json' });
+cli.config.get('dir');        // the store this instance opened
+cli.config.path;              // where it resolved to
+```
+
+`resolveConfigPath(argv)` is exported separately when only the path is needed.
+
+## Handling real data
+
+This repo journals against the user's real, private data. Treat it accordingly:
+
+- **Do not read the real data dir to answer questions about behaviour.** `dir`
+  resolves to a personal journal; prefer `-c <temp-config.json>` pointed at a
+  temp data dir (see above) when you need to exercise the CLI.
+- **Never copy real journal content into generated code or tests.** No real
+  project names, task descriptions, messages or paths in source, fixtures or
+  test expectations. The suite uses synthetic values (`MOURT`, `OTHER`,
+  `msg-*`) so it stays hermetic and leaks nothing into the git history.
+- **Do not run the real `taskwarrior`.** Point `plugin.taskw.command` at a
+  throwaway script in a temp dir; see `test/helpers.ts` for `fakeTask()`.
+- Documenting the user's own tooling in README is fine (`dock-warrior` is
+  theirs); copying their *data* is not. The line is intent and provenance,
+  not the string itself.
+
 ## Gotchas
 
 - **No tests exist yet.** `npm test` exits 1 by design (`echo "Error: no test specified" && exit 1`); nothing is broken.
@@ -56,8 +91,8 @@ Precedence: `-c/--config` > `$MOURT_CONFIG` > configstore default. Note that
 - `bin/mourt` must parse argv *before* `new Cli(argv)`, and construction is wrapped in try/catch — a bad `--config` throws during construction, outside the `run()` promise chain.
 - `lib/*.ts` are CommonJS scripts with no `import`/`export`, so TypeScript treats them as sharing **one global scope**. Top-level `const` names must be unique across files (hence `nodefs`/`nodepath` in `config.ts`). Do not "fix" this with `export {}` — that emits an `__esModule` marker into the CJS and can confuse bundler interop.
 - `require('../package.json')` resolves fine because `tsconfig` uses CommonJS. Don't "fix" it to an ESM import.
-- `config.get('dir')` returns `undefined` until `-D dir=...` is set. `Cli.requireBaseDir()` throws a helpful error rather than letting `fs.opendir(undefined)` fail opaquely.
-- Data is stored under the config dir set by `-D dir=...`, with date-subdirectories (`YYYY/MM/DD/`)
+- `config.get('dir')` returns `undefined` until `dir` is set (via `-D dir=...` or by writing the key straight into the config file). `Cli.requireBaseDir()` throws a helpful error rather than letting `fs.opendir(undefined)` fail opaquely.
+- Data is stored under the config's `dir`, with date-subdirectories (`YYYY/MM/DD/`)
 - `date` on disk is an **ISO string** (`date.toISOString()`), not a `Date` object — `JSON.stringify` would have coerced it anyway, so this is explicit. Read it back with `new Date(blob.date)`.
 - `taskwarrior` is **optional** on disk — `doMessage` deletes the key when there are no active tasks.
 - When listing (`-l`) with `-p project`, entries **without** a `taskwarrior` field are excluded (they can't be matched). Without `-p`, all entries are listed.
