@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const config : any = require('./config')();
+const createConfig = require('./config').createConfig;
 const fs = require('fs').promises;
 const path = require('path');
 const { fetchTask } = require('./plugin-taskw');
@@ -33,17 +33,25 @@ interface MourtBlob {
 };
 class Cli {
 
-    constructor() {
+    /**
+     * The config store. Opened per-instance so that `--config` / $MOURT_CONFIG
+     * can redirect it, and so tests can inject a throwaway store.
+     */
+    readonly config: any;
+
+    constructor(argv: any = {}) {
+        this.config = createConfig(argv);
     }
 
     static get opts() {
         return {
             alias: {
                 m: 'message', // -m 'what i did'
-                D: 'set',  // -P dir=/some/path
+                D: 'set',  // -D dir=/some/path
                 P: 'get',  // -P dir
                 p: 'project', // -p project  ( filter on taskwarrior.project)
-                l: 'list'
+                l: 'list',
+                c: 'config' // -c /path/to/config.json  (override config file)
             }
         };
     }
@@ -54,13 +62,21 @@ class Cli {
         } else if (argv.set) {
             const [k, v] = argv.set.split('=');
             console.log(k, '=', v);
-            config.set(k, v);
+            this.config.set(k, v);
         } else if (argv.get) {
-            console.log(config.get(argv.get));
+            if (argv.get === 'path') {
+                // Which config file is actually in effect?
+                console.log(this.config.path);
+            } else {
+                console.log(this.config.get(argv.get));
+            }
         } else if (argv.list) {
             return this.doList(argv);
         } else if (argv._.length != 0) {
             throw Error('wrong usage');
+        } else if (argv.config) {
+            // `-c <path>` on its own: report where it resolved to.
+            console.log(this.config.path);
         }
     }
 
@@ -75,7 +91,7 @@ class Cli {
         const dir = await this.getDir(date);
         const fn = date.toISOString() + '.json';
         const filep = path.join(dir, fn);
-        const taskwarrior = await fetchTask(config);
+        const taskwarrior = await fetchTask(this.config);
         const o = {
             // Stored as an ISO string; MourtBlob.date is read back as a string.
             date: date.toISOString(),
@@ -209,7 +225,7 @@ class Cli {
     }
 
     get baseDir(): string | undefined {
-        return config.get('dir');
+        return this.config.get('dir');
     }
 
     /**
