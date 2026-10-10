@@ -16,8 +16,12 @@ TypeScript compiles to `dist/`, mirroring the source tree (`dist/main.js`,
 
 ```
 npm run build     # tsc — compiles to dist/
-npm test          # placeholder only: exits 1 because no tests exist yet
+npm test          # build, then 59 node:test cases
 ```
+
+`npm test` runs `npm run build` first, so `dist/` and `dist-test/` both exist
+before the e2e tests spawn `bin/mourt`. Tests compile from **src** into
+`dist-test/` (not `dist/`) so they can never reach the published tarball.
 
 To run the CLI directly from the repo (requires a prior `npm run build`):
 
@@ -82,7 +86,7 @@ This repo journals against the user's real, private data. Treat it accordingly:
 
 ## Gotchas
 
-- **No tests exist yet.** `npm test` exits 1 by design (`echo "Error: no test specified" && exit 1`); nothing is broken.
+- **No lint config.** `npm run build` type-checks `lib/`; `npm test` additionally type-checks `test/` via `tsconfig.test.json`. There is no linter.
 - `bin/mourt` requires `../dist/lib/cli` — the *compiled* output, not `lib/cli.ts`. Build before running.
 - `lib/config.ts` requires `../../package.json` because the compiled file lives at `dist/lib/`. Moving between source and compiled dirs means different relative depths.
 - `lib/config.ts` returns `createConfig(argv)` — calling code must invoke it: `require('./config').createConfig(argv)`. The store is opened **per `Cli` instance** in the constructor, not at module load, so that `-c`/`$MOURT_CONFIG` can redirect it and tests can inject a throwaway store.
@@ -118,12 +122,20 @@ This repo journals against the user's real, private data. Treat it accordingly:
 - [x] **`lib/plugin-taskw.ts`** — removed the no-op `fetchTask` → `fetchData` wrapper; the exported function is now the implementation
 
 ### Low
-- [x] **`AGENTS.md`** — clarified that `npm test` means "no tests yet", not "tests are broken"
+- [x] **`AGENTS.md`** — clarified that `npm test` failing meant "no tests yet", not "tests are broken"
 - [x] **`tsconfig.json`** — dropped redundant `"module": "commonjs"` (already set by `@tsconfig/node16`)
 - [x] **`.npmignore`** — deleted; superseded by the `files` field in `package.json`
 
+### Later
+- [x] **Test suite** — 59 `node:test` cases in `test/`, compiled by `tsconfig.test.json` to `dist-test/`. Every case uses a temp config and data dir, so the suite cannot touch the real configstore file.
+- [x] **Config file redirect** — `-c/--config` and `$MOURT_CONFIG` let a run target a throwaway config instead of rewriting the real one. See "Choosing a config file" above.
+- [x] **CI on current Node** — `.github/workflows/node.js.yml` tests 22.x/24.x (LTS) plus 26.x (Current). Requires `engines.node >= 22.3`.
+- [x] **Toolchain** — `typescript` 5.9, `@types/node` 26.
+
 ### Remaining / Not Done
-- [ ] **No test suite.** `npm test` still exits 1. Everything above was verified manually (CLI smoke tests + `npm pack` install test), but there is no regression coverage. Adding a runner (e.g. `node:test`) is the natural next step.
+- [ ] **CI only runs Linux.** The binary and configstore both have platform-specific behaviour (`/bin/sh` fake tasks, XDG config paths), so macOS and Windows are untested. A `runs-on` matrix entry would cover it.
 - [ ] **`main.ts` / codebase stays CommonJS.** Works fine and matches the `exports` map; converting to ESM would be a larger, riskier change with no current benefit.
-- [ ] **`getList()` reads every JSON file** to filter by project — `// TODO: filter by date for speed` remains unaddressed.
-- [ ] **`doMessage` has a `// TODO: override`** — unclear if the intent is to allow date/time override for backfilling entries.
+- [ ] **`getList()` reads every JSON file** to filter by project — `// TODO: filter by date for speed` remains unaddressed. Fine at 8 entries, linear at thousands.
+- [ ] **`doMessage` has a `// TODO: override`** — unclear if the intent is to allow date/time override for backfilling entries. Needs a decision on the flag's semantics before implementing.
+- [ ] **`semver@6.3.0` ReDoS advisory** — reachable only through `configstore → make-dir`, not from user input. Would need a `configstore` upgrade or an `overrides` entry to clear.
+- [ ] **No lint or typecheck-only script.** `npm run build` type-checks `lib/`, but nothing lints, and `test/` is only type-checked as part of `npm test`.
